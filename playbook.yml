@@ -1,12 +1,27 @@
 ---
-- hosts: all   
+- hosts: all
   become: yes
   tasks:
-  - name: Add the user 
+  - name: Add the user
     user:
       name: demo
       shell: /bin/bash
       append: yes
+
+  - name: create the dir
+    file:
+      path: /home/vagrant/task
+      state: directory
+      mode: 0775   
+      owner: vagrant
+      group: vagrant
+
+  - name: Get the code
+    become: vagrant
+    git:
+      repo: https://github.com/srmanikandan/zerodha_task.git
+      dest: /home/vagrant/task
+      update: no
 
   - name: configure system settings, file descriptors and number of threads
     pam_limits:
@@ -45,5 +60,10 @@
     become: yes
     apt: update_cache=yes name=docker-ce state=latest
 
+  - name: Ensure docker-compose is installed and available
+    shell: sudo curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
   - name: start all
-    command: docker-compose -f up -d
+    become: yes
+    command: docker-compose -f /home/vagrant/task/docker-compose.yml up -d
+                              
